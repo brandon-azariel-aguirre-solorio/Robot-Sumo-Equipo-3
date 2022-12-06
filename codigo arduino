@@ -1,0 +1,382 @@
+
+#include <PS2X_lib.h>
+#include <printf.h>
+
+int Control_Velocidad_Motor_1 = 6;
+int Control_Velocidad_Motor_2 = 5;
+int latchPin = 8;
+int clockPin = 7;
+int dataPin = 4;
+byte Mi_bit = 0b00010010;
+byte bitreposo = 0b00000000;
+byte bitpren = 0b00101000;
+byte bitadelante = 0b00101000;  //
+byte bitatras = 0b00010010;
+int estado = 0;
+long tiempo;
+int distancia;
+int espera = 20;
+int trigPin = 2;
+int echoPin = 3;
+int Velocidad_Motor_1 = 255;
+int Velocidad_Motor_2 = 255;
+unsigned long last_Time = 0;
+PS2X ps2x;
+int error = 0;
+byte type = 0;
+byte vibrate = 0;
+
+void setup() {
+
+  error = ps2x.config_gamepad(13, 11, 10, 12, true, true);  //setup pins and settings:  GamePad(clock, command, attention, data, Pressures?, Rumble?) check for error
+  pinMode(latchPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(dataPin, OUTPUT);
+  pinMode(Control_Velocidad_Motor_1, OUTPUT);
+  pinMode(Control_Velocidad_Motor_2, OUTPUT);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  type = ps2x.readType();
+  type = ps2x.readType();
+    Mi_bit = 0b00000000;
+          digitalWrite(latchPin, LOW);
+          shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+          digitalWrite(latchPin, HIGH);
+
+}
+
+void loop() {
+
+  if (type == 1) {
+    ps2x.read_gamepad(false, vibrate);  //Lectura del estado
+    //Lectura de las palancas analógicas
+    //palanca izquierda
+    if (ps2x.Analog(PSS_LY) >= 120 && ps2x.Analog(PSS_LY) <= 140) {
+      if (ps2x.Analog(PSS_RX) >= 140) {
+        if (ps2x.Analog(PSS_LY) >= 140) {
+          Mi_bit = bitatras;
+          digitalWrite(latchPin, LOW);
+          shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+          digitalWrite(latchPin, HIGH);
+          Velocidad_Motor_1 = map(ps2x.Analog(PSS_RX), 0, 255, 1000, 2000);
+          analogWrite(Control_Velocidad_Motor_1, Velocidad_Motor_1);
+          analogWrite(Control_Velocidad_Motor_2, 50);
+          delay(espera);
+        } else if (ps2x.Analog(PSS_LY) <= 120) {
+          Mi_bit = bitadelante;
+          digitalWrite(latchPin, LOW);
+          shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+          digitalWrite(latchPin, HIGH);
+          Velocidad_Motor_1 = map(ps2x.Analog(PSS_RX), 0, 255, 1000, 2000);
+          analogWrite(Control_Velocidad_Motor_1, Velocidad_Motor_1);
+          analogWrite(Control_Velocidad_Motor_2, 50);
+          delay(espera);
+        } else {
+          Mi_bit = bitadelante;  //izquierda
+          digitalWrite(latchPin, LOW);
+          shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+          digitalWrite(latchPin, HIGH);
+          Velocidad_Motor_1 = map(ps2x.Analog(PSS_RX), 0, 255, 1000, 2000);
+          analogWrite(Control_Velocidad_Motor_1, Velocidad_Motor_1);
+          analogWrite(Control_Velocidad_Motor_2, 50);
+          delay(espera);
+        }
+
+      } else if (ps2x.Analog(PSS_RX) <= 120) {
+        if (ps2x.Analog(PSS_LY) >= 140) {
+          Mi_bit = bitatras;
+          //derecha
+          digitalWrite(latchPin, LOW);
+          shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+          digitalWrite(latchPin, HIGH);
+          Velocidad_Motor_2 = map(ps2x.Analog(PSS_LY), 0, 255, 1000, 2000);
+          analogWrite(Control_Velocidad_Motor_1, 50);
+          analogWrite(Control_Velocidad_Motor_2, Velocidad_Motor_2);
+          delay(espera);
+        } else if (ps2x.Analog(PSS_LY) <= 120) {
+          Mi_bit = bitadelante;
+          //derecha
+          digitalWrite(latchPin, LOW);
+          shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+          digitalWrite(latchPin, HIGH);
+          Velocidad_Motor_2 = map(ps2x.Analog(PSS_LY), 0, 255, 1000, 2000);
+          analogWrite(Control_Velocidad_Motor_1, 50);
+          analogWrite(Control_Velocidad_Motor_2, Velocidad_Motor_2);
+          delay(espera);
+        } else {
+          Mi_bit = bitadelante;
+          //derecha
+          digitalWrite(latchPin, LOW);
+          shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+          digitalWrite(latchPin, HIGH);
+          Velocidad_Motor_2 = map(ps2x.Analog(PSS_RX), 0, 255, 1000, 2000);
+          analogWrite(Control_Velocidad_Motor_1, 50);
+          analogWrite(Control_Velocidad_Motor_2, Velocidad_Motor_2);
+          delay(espera);
+        }
+      }
+      //Neutro
+      if (ps2x.Analog(PSS_RX) >= 120 && ps2x.Analog(PSS_RX) <= 140) {
+        analogWrite(Control_Velocidad_Motor_1, 0);
+        analogWrite(Control_Velocidad_Motor_2, 0);
+        //Lectura de los botones de dirección
+        if (ps2x.Button(PSB_PAD_UP)) {  //Arriba
+          Mi_bit = bitadelante;
+          digitalWrite(latchPin, LOW);
+          shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+          digitalWrite(latchPin, HIGH);
+          analogWrite(Control_Velocidad_Motor_1, 255);
+          analogWrite(Control_Velocidad_Motor_2, 255);
+          delay(espera);
+        } else if (ps2x.Button(PSB_PAD_RIGHT)) {
+          Mi_bit = bitadelante;  //izquierda
+          digitalWrite(latchPin, LOW);
+          shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+          digitalWrite(latchPin, HIGH);
+          analogWrite(Control_Velocidad_Motor_1, 255);
+          analogWrite(Control_Velocidad_Motor_2, 50);
+          delay(espera);
+        } else if (ps2x.Button(PSB_PAD_LEFT)) {
+          Mi_bit = bitadelante;
+          //derecha
+          digitalWrite(latchPin, LOW);
+          shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+          digitalWrite(latchPin, HIGH);
+          analogWrite(Control_Velocidad_Motor_1, 50);
+          analogWrite(Control_Velocidad_Motor_2, 255);
+          delay(espera);
+        } else if (ps2x.Button(PSB_PAD_DOWN)) {
+          //abajo
+          Mi_bit = bitatras;
+          digitalWrite(latchPin, LOW);
+          shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+          digitalWrite(latchPin, HIGH);
+          analogWrite(Control_Velocidad_Motor_1, 255);
+          analogWrite(Control_Velocidad_Motor_2, 255);
+          delay(espera);
+        }
+        //Lectura del estado de botones
+        else if (ps2x.NewButtonState()) {
+          if (ps2x.Button(PSB_RED)) {
+            giroLoco2();
+
+          } else if (ps2x.Button(PSB_GREEN)) {
+            envestida();
+          } else if (ps2x.Button(PSB_PINK)) {
+            giroLoco();
+          } else if (ps2x.Button(PSB_BLUE)) {
+            envestida_atras();
+          } else if (ps2x.Button(PSB_L3)) {
+            //ACELERAR fondo
+            //revisar
+            Mi_bit = bitadelante;
+            digitalWrite(latchPin, LOW);
+            shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+            digitalWrite(latchPin, HIGH);
+            analogWrite(Control_Velocidad_Motor_1, 255);
+            analogWrite(Control_Velocidad_Motor_2, 255);
+            delay(espera);
+          } else if (ps2x.Button(PSB_R3)) {
+            //retroceder
+            //revisar
+            Mi_bit = bitatras;
+            digitalWrite(latchPin, LOW);
+            shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+            digitalWrite(latchPin, HIGH);
+            analogWrite(Control_Velocidad_Motor_1, 255);
+            analogWrite(Control_Velocidad_Motor_2, 255);
+            delay(espera);
+          } else if (ps2x.Button(PSB_L2)) {
+            //tacleada izquierda
+            tacleada_dere();
+          }
+
+          else if (ps2x.Button(PSB_R2)) {
+            //tacleada derecha
+            tacleada_iz();
+          }
+        }
+      }
+    } else if (ps2x.Analog(PSS_LY) >= 140) {
+      //atras
+      if (ps2x.Analog(PSS_RX) >= 140) {
+        Mi_bit = bitatras;
+        digitalWrite(latchPin, LOW);
+        shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+        digitalWrite(latchPin, HIGH);
+        Velocidad_Motor_1 = map(ps2x.Analog(PSS_LY), 0, 255, 1000, 2000);
+        analogWrite(Control_Velocidad_Motor_1, Velocidad_Motor_1);
+        analogWrite(Control_Velocidad_Motor_2, 50);
+        delay(espera);
+      } else if (ps2x.Analog(PSS_RX) <= 120) {
+        Mi_bit = bitatras;
+        //derecha
+        digitalWrite(latchPin, LOW);
+        shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+        digitalWrite(latchPin, HIGH);
+        Velocidad_Motor_2 = map(ps2x.Analog(PSS_LY), 0, 255, 1000, 2000);
+        analogWrite(Control_Velocidad_Motor_1, 50);
+        analogWrite(Control_Velocidad_Motor_2, Velocidad_Motor_2);
+        delay(espera);
+      } else {
+        Mi_bit = bitatras;
+        digitalWrite(latchPin, LOW);
+        shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+        digitalWrite(latchPin, HIGH);
+        Velocidad_Motor_1 = map(ps2x.Analog(PSS_LY), 0, 255, 1000, 2000);
+        Velocidad_Motor_2 = map(ps2x.Analog(PSS_LY), 0, 255, 1000, 2000);
+        analogWrite(Control_Velocidad_Motor_1, Velocidad_Motor_1);
+        analogWrite(Control_Velocidad_Motor_2, Velocidad_Motor_2);
+        delay(espera);
+      }
+
+    } else if (ps2x.Analog(PSS_LY) <= 120) {
+      //adelante
+      if (ps2x.Analog(PSS_RX) >= 140) {
+        Mi_bit = bitadelante;  //izquierda
+        digitalWrite(latchPin, LOW);
+        shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+        digitalWrite(latchPin, HIGH);
+        Velocidad_Motor_1 = map(ps2x.Analog(PSS_LY), 0, 255, 1000, 2000);
+        analogWrite(Control_Velocidad_Motor_1, Velocidad_Motor_1);
+        analogWrite(Control_Velocidad_Motor_2, 50);
+        delay(espera);
+      } else if (ps2x.Analog(PSS_RX) <= 120) {
+        Mi_bit = bitadelante;
+        //derecha
+        digitalWrite(latchPin, LOW);
+        shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+        digitalWrite(latchPin, HIGH);
+        Velocidad_Motor_2 = map(ps2x.Analog(PSS_LY), 0, 255, 1000, 2000);
+        analogWrite(Control_Velocidad_Motor_1, 50);
+        analogWrite(Control_Velocidad_Motor_2, Velocidad_Motor_2);
+        delay(espera);
+      } else {
+        Mi_bit = bitadelante;
+        digitalWrite(latchPin, LOW);
+        shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+        digitalWrite(latchPin, HIGH);
+        Velocidad_Motor_1 = map(ps2x.Analog(PSS_LY), 0, 255, 1000, 2000);
+        Velocidad_Motor_2 = map(ps2x.Analog(PSS_LY), 0, 255, 1000, 2000);
+        analogWrite(Control_Velocidad_Motor_1, Velocidad_Motor_1);
+        analogWrite(Control_Velocidad_Motor_2, Velocidad_Motor_2);
+        delay(espera);
+      }
+    }
+  } else {
+    return;
+  }
+
+  delay(100);
+}
+
+int tacleada_iz() {
+  Mi_bit = bitadelante;
+  //derecha
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 250);
+  analogWrite(Control_Velocidad_Motor_2, 50);
+  delay(100);
+  Mi_bit = bitadelante;  //izquierda
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 250);
+  analogWrite(Control_Velocidad_Motor_2, 20);
+  delay(500);
+  Mi_bit = bitadelante;
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 255);
+  analogWrite(Control_Velocidad_Motor_2, 255);
+  delay(100);
+  Mi_bit = bitadelante;  //izquierda
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 250);
+  analogWrite(Control_Velocidad_Motor_2, 30);
+  delay(500);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 255);
+  analogWrite(Control_Velocidad_Motor_2, 255);
+  delay(200);
+}
+int tacleada_dere() {
+  Mi_bit = bitadelante;  //izquierda
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 250);
+  analogWrite(Control_Velocidad_Motor_2, 50);
+  delay(100);
+  Mi_bit = bitadelante;
+  //derecha
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 20);
+  analogWrite(Control_Velocidad_Motor_2, 250);
+  delay(500);
+  Mi_bit = bitadelante;
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 255);
+  analogWrite(Control_Velocidad_Motor_2, 255);
+  delay(100);
+  Mi_bit = bitadelante;
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 30);
+  analogWrite(Control_Velocidad_Motor_2, 250);
+  delay(500);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 255);
+  analogWrite(Control_Velocidad_Motor_2, 255);
+  delay(200);
+}
+void envestida() {
+  Mi_bit = bitadelante;
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 250);
+  analogWrite(Control_Velocidad_Motor_2, 250);
+  delay(2000);
+}
+void envestida_atras() {
+  Mi_bit = bitatras;
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 250);
+  analogWrite(Control_Velocidad_Motor_2, 250);
+  delay(2000);
+}
+void giroLoco() {
+  Mi_bit = bitadelante;
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 255);
+  analogWrite(Control_Velocidad_Motor_2, 50);
+  delay(800);
+}
+void giroLoco2() {
+  Mi_bit = 0b00100010;
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, Mi_bit);
+  digitalWrite(latchPin, HIGH);
+  analogWrite(Control_Velocidad_Motor_1, 255);
+  analogWrite(Control_Velocidad_Motor_2, 50);
+  delay(1600);
+}
+
+
